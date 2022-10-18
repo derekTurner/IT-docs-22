@@ -1,7 +1,7 @@
 <!-- docs/_sidebar.md -->
 
 * [<h1>Home</h1>](/)
-* [<h2>Client Side React</h2>](Block_1/readme.md)
+* [<h2>Client Side React</h2>](Block_1/README.md)
 * [<h3>PC Platform Setup</h3>](Block_1/section_0/setup.md)
 * [<h3>Introducing React</h3>](Block_1/section_1/react_intro.md)
 * [<h3>React Components</h3>](Block_1/section_2/components.md)
