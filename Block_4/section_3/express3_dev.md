@@ -15,31 +15,69 @@ A final stage will be to turn off server rendering and then return JSON data to 
 
 ## Starting a new environment
 
-Express-2 will be useful as starter code for new express projects so copy the code from that github site to a new github repository Express-3 and **create** a new development area in docker.  Since the code is preserved in github it is not necessary to maintain the old development environments in docker.  
+Express--2 will be used as the starter code for the next milestone which will be created in an new environment named Express--3.    Since the code is preserved in github it is not necessary to maintain the old development environments in docker, but I am saving them as milestones.
 
-Notes from here are subject to review as I pass through updating.
+### Duplicate repository
 
-I will just keep the old environments going while the module runs.![Express 3 environment](clever_northcutt.png)
+The starting point for this is the express 1 code so I will copy this into a new repository named express--2 using the instructions at on [gitHub docs](https://docs.github.com/en/repositories/creating-and-managing-repositories/duplicating-a-repository). 
 
-The environment mames will change each time they are created, but the repository name will always be the first item.  As you follow the notes you should substitute your own environment names.
+This will create a local copy of the express1 repository which is deleted at the end.  I found I had to delete this manually!
+
+Start by creating a new public github repository express--3 with a not .gitignore file.
+
+Create the local bare clone copy working in powershell;
+
+> git clone --bare https://github.com/derekTurner/express--2.git
+
+Move to the now local copy and Mirror push the thew repository
+
+> cd express--2.git
+
+> git push --mirror https://github.com/derekTurner/express--3.git
+
+Then remove the local repository
+
+> cd..
+
+Manually remove the local copy of express--2.git which is probably in your users directory.
+
+Now use docker desktop to create a new environment from the express--3 repository.
+
+![Express 3 environment](create3.png)
+
+The environment names will change each time they are created, but the repository name will always be the first item.  As you follow the notes you should substitute your own environment names.
+
+## express--3
 
 Open your new Express-3 environment in Visual studio code.
 
 The code is loaded from github into a development environment which can be accessed by the 'node' username.
 
+For me this is opening as root access.
+
+```code
+root@3165d4aa8563:/com.docker.devenvironments.code# 
+```
+However on other machines this may still open with node as the user.
+
 ```code
 node@b846c088532a:/com.docker.devenvironments.code$
 ```
-However the node modules listed in package.json have not been loeded into the environment.  The installation of elements which are not in the devenvironments folder will need root access.
 
-To obtain root access a bash shell can be opened in the container using a docker command issued in a separate terminal  (either in a separate VSC terminal window or in the powershell app):
+The node modules listed in package.json have not yet been loaded into the environment.  The installation of elements which are not in the devenvironments folder will need root access.
+
+If you need to you can obtain root access a bash shell can be opened in the container using a docker command issued in a separate terminal  (either in a separate VSC terminal window or in the powershell app) I like powershell for this as it gives a sense of separation of tasks:
 
 >  docker exec -u 0 -it flamboyant_perlman bash
 
 ```code
 root@b846c088532a:/#
 ```
-So, as root user:
+With Docker desktop 4.13.0 there is a new integrated terminal feature which accesses the root user without the need for a third party terminal.
+
+![terminal](terminal.png)
+
+Either way, as root user:
 
 > cd com.docker.devenvironments.code
 
@@ -50,11 +88,11 @@ So, as root user:
 Take note of these steps as they will recur each time a new node environment is generated.
 
 ```code
-npm WARN deprecated core-js@2.6.12: core-js@<3.3 is no longer maintained and not recommended for usage due to the number of issues. Because of the V8 engine whims, feature detection in old core-js versions could cause a slowdown up to 100x even if nothing is polyfilled. Please, upgrade your dependencies to the actual version of core-js.
+npm WARN deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained and not recommended for usage due to the number of issues. Because of the V8 engine whims, feature detection in old core-js versions could cause a slowdown up to 100x even if nothing is polyfilled. Some versions have web compatibility issues. Please, upgrade your dependencies to the actual version of core-js.
 
-added 76 packages, removed 2 packages, changed 15 packages, and audited 241 packages in 22s
+added 157 packages, and audited 158 packages in 6s
 
-23 packages are looking for funding
+12 packages are looking for funding
   run `npm fund` for details
 
 4 vulnerabilities (2 low, 2 high)
@@ -70,9 +108,9 @@ Run `npm audit` for details.
 > npm install core-js
 
 ```
-up to date, audited 241 packages in 2s
+up to date, audited 158 packages in 956ms
 
-23 packages are looking for funding
+12 packages are looking for funding
   run `npm fund` for details
 
 4 vulnerabilities (2 low, 2 high)
@@ -90,9 +128,9 @@ Then to be complete:
 > npm audit fix -- force
 
 ```code
-up to date, audited 241 packages in 1s
+p to date, audited 158 packages in 956ms
 
-23 packages are looking for funding
+12 packages are looking for funding
   run `npm fund` for details
 
 # npm audit report
@@ -113,6 +151,7 @@ Will install pug@2.0.4, which is outside the stated dependency range
 node_modules/pug-code-gen
   pug  0.1.0 - 2.0.0-rc.4
   Depends on vulnerable versions of pug-code-gen
+  Depends on vulnerable versions of pug-filters
   node_modules/pug
 
 4 vulnerabilities (2 low, 2 high)
@@ -123,12 +162,14 @@ To address issues that do not require attention, run:
 To address all issues, run:
   npm audit fix --force
  ``` 
+At express--2 we left pug at version 2 but now we will update this.
+
 > npm install pug
 
 ```code
-up to date, audited 241 packages in 2s
+up to date, audited 158 packages in 647ms
 
-23 packages are looking for funding
+12 packages are looking for funding
   run `npm fund` for details
 
 4 vulnerabilities (2 low, 2 high)
@@ -138,6 +179,20 @@ To address all issues, run:
 
 Run `npm audit` for details.
 ```
+> npm auddit fix --force
+
+```code
+npm WARN using --force Recommended protections disabled.
+npm WARN audit Updating pug to 3.0.2, which is a SemVer major change.
+
+added 6 packages, removed 30 packages, changed 19 packages, and audited 131 packages in 4s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+```
+
 Pug is now at version 3 as shown in package.json
 
 ```json
@@ -150,43 +205,75 @@ Pug is now at version 3 as shown in package.json
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
-    "core-js": "^3.19.1",
+    "core-js": "^3.26.0",
     "debug": "~2.6.9",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
     "morgan": "~1.9.1",
-    "nodemon": "^2.0.14",
+    "nodemon": "^2.0.20",
     "pug": "^3.0.2"
   }
 }
 ```
 
-You can now quit the bash shell.
+it is a good idea to set the root password to "node"
+
+> root@3165d4aa8563:/com.docker.devenvironments.code/myapp# passwd
+
+```code
+New password: 
+Retype new password: 
+passwd: password updated successfully
+```
+
+You can now quit the bash shell. Or change to the node user.
+
+>su node
+
+### using http
+If you use https the browser should require a certificate.  Browsers are becoming stricter and may require a certificate even for https on localhost.  That may lead to the application not connecting to the browser.
+
+If this becomes a problem the formal fix is to create a certificate for localhost.
+
+As a workaround just use http for localhost.  To do this you can add a console log line to **myapp/bin/www.js**
+
+```javascript
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+console.log(`Running on http://127.0.0.1:${port}`);
+```
+
+Note that the server port used by this script is **3000** not 8080 as was the case in the previous example!
+
+This will generate an output to the terminal when npm run start is invoked later down these notes:
+
+```code
+> myapp@0.0.0 start
+> nodemon ./bin/www
+
+[nodemon] 2.0.20
+[nodemon] to restart at any time, enter `rs`
+[nodemon] watching path(s): *.*
+[nodemon] watching extensions: js,mjs,json
+[nodemon] starting `node ./bin/www`
+Running on http://127.0.0.1:3000
+GET / 304 103.559 ms - -
+GET /stylesheets/style.css 304 2.328 ms - -
+```
+The http link is clickable and will open in the browser.
+
 
 
 ## Developing the app with basic routing
 
-Return to the node user terminal window in the VSC view of the container node, and change directory to the myapp folder:
+There is no database yet so routing is just to provide confirmatory messages for a couple of URLs.
 
-```code
-node@b846c088532a:/com.docker.devenvironments.code/myapp$
-```
-
-restart the application.
-
->npm start
-
-```code
-> myapp@1.0.0 start
-> nodemon app.js
-
-[nodemon] 2.0.14
-[nodemon] to restart at any time, enter `rs`
-[nodemon] watching path(s): *.*
-[nodemon] watching extensions: js,mjs,json
-[nodemon] starting `node app.js`
-Running on http://0.0.0.0:8080
-```
 ### app.js
 
 The file structure in express_app 3 is:
@@ -347,16 +434,20 @@ module.exports = router;
 
 To see the output of the users route, with myapp2 running, browse to:
 
+> localhost:3000/
+
+![/](rootroute.png)
+
 > localhost:3000/users
 
-![user](usersinitialresponse.webp)
+![user](users.png)
 
 
 To see a 404 error browse to:
 
 > localhost:3000/empty
 
-![empty](error404.webp)
+![empty](empty.png)
 
 At this point make sure that all changes for Express-3 are committed and synchronised and github for Express-3 is up to date.
 
@@ -380,8 +471,9 @@ Initially the database and its admin interface will be run together and this sec
 
 To get this started a new environment will be created featuring both these two applications and at a later point we will make the step to run the database with the express server.
 
+I note that the current version of mongodB is 6.0.2.  The current version of mongo-express is 0.54.0 (there is a 1.o version but this is only an alpha release).
 
-Create a new github repository named **mongo1** project with the following initial file in the .docker directory and nothing else:
+Create a new public github repository named **mongo--1** project. Add a gitnore file as you work in github.com based on Node. Add the following initial file to the .docker directory and nothing else:
 
 **.docker/docker-compose.yaml**
 
@@ -433,16 +525,14 @@ networks:
   mongo1_network:
     driver: bridge
 ```
-The [compose file](https://docs.docker.com/compose/) describes two services each built from named images on docker hub.  The required ports are exposed for use.  The version 3.8 denotes the version of docker compose which should be compatible with the docker engine version being used.  A compatibility table is available [here](https://docs.docker.com/compose/compose-file/).
-
-Add a gitnore file as you work in github.com based on Node.
+The [compose file](https://docs.docker.com/compose/) describes two services each built from named images on docker hub.  The required ports are exposed for use.  The version 3.8 denotes the version of docker compose which should be compatible with the docker engine version being used.  A compatibility table is available [here](https://docs.docker.com/compose/compose-file/) with the full compose file specification.
 
 
-![mongo1 repository](mongo1repository.webp)
+![mongo1 repository](compose.png)
 
 In order to use this docker compose file you must ensure that compose V2 is selected in docker desktop.
 
-![v2 selected](v2selected.png)
+![v2 selected](composeV2.png)
 
 
 
@@ -508,77 +598,8 @@ Author:
 Genre:  
 name: "Fantasy"
 
-### Creating a UML diagram
 
-As a brief sidenote, visual studio code is able to create a UML diagram through the addition of a plug in [plantUML](http://plantuml.com/class-diagram).
-
-![database uml](plantUmlExtension.webp)
-
-It's necessary to have following installed:
-
-+ Java : Platform for PlantUML running.
-+ Graphviz : PlantUML requires it to calculate positions in diagram.
-
-The plugin has an integrated copy of plantuml.jar and GraphViz, so you are normally good to go.
-
-A tutorial at code project [UML Made Easy with PlantUML & VS Code](https://www.codeproject.com/Articles/1278703/UML-Made-Easy-with-PlantUML-VS-Code) is a further useful guide to using the plug in.
-
-
-
-Working in a new folder (not in the running containers) named uml_diagrams the following file For the diagram of the library database is saved as library.plantuml.
-
-```java
-@startuml demo
-
-
-class Book {
-   title : String
-   author : Author[1]
-   summary : String
-   ISBN : String
-   genre : Genre[0..*]
-
-   url : String
-}
-
-class Author {
-    first_name : String
-    family_name : String
-    date_of_birth : Date
-
-    name : String
-    lifespan : String
-    url : String
-}
-
-class BookInstance {
-    book: Book
-    imprint: String
-    status: enum
-    due_back: Date
-
-    url:String
-}
-
-class Genre {
-    name : String
-
-    url :String
-}
-
-
-Book "1..*" -- "1" Author
-Book "0..*" -- "0..*" Genre
-Book "1" -- "0..*" BookInstance
-@enduml
-```
-
-Right clicking over the file opens a menu to see a preview of the diagram, which will change as the file is edited. Then to print the digram to the desktop in your chosen format. (The plug in works well if you have Java on your machine, otherwise you may need additional software).  Read the details on the plantUML site to see details for changing the diagram formatting.
-
-![database uml](plantPreview.webp)
-
-
-### Back to the database
+### Populating the dataase
 
 
 Docker provides a method to populate the database which is described in the environmental variables section of the docker hub [mongo page](https://hub.docker.com/_/mongo/).
@@ -874,31 +895,140 @@ if (error) {
 }
 ```
 
+The file is added to github:
+
+![mongo-init.js](mongo-init.png)
+
 ## Create a database dev environment 
+
+Create the new environment in Docker desktop.
+
+![create environment](createEnviron.png)
+
+### troubleshooting
+
+**VPN error**
+I have a VPN connected on my machine.  This autostarts, but I normally switch it off.
+
+If docker desktop is opened before the vpn has been closed it will make login credentials for registry-1.docker which will not work when the VPN is subsequently turned off.
+
+This results in an error on port 443 related to registry-1.docker.  To fix this cancel the existing login from within powershell
+
+>  docker logout registry-1.docker.io
+
+```code
+Removing login credentials for registry-1.docker.io
+```
+Now creating the environment runs.
+
+The pull is completed and the environment is running:
+
+![pulled](pulled.png)
+
+Inspect the database at
+
+> http://localhost:8081/
+
+
+
+If the browser asks you to sign in.  The Username was set to root and the password to example.
+
+![sign in](signin.png)
+
+
+Note that the local_library database has been created:
+
+![database running](databaseRunning.png)
+
+View the local-library to see the collections: author, book, bookinstance and genre.
+
+![collectionscreated](collectionscreated.png)
+
+View the details of the authors collection
+
+![authorspopulated](authorspopulated.png)
+
+Double click an individual entry line to see the JSON object representation including a unique id.
+
+![json author](rothfuss.png)
+
+Step back in the browser till you return to the main editor menu and then view the book collection.  Notice that the documents in the book collection contain objects representing the full author details for each book.
+
+![book details](bookcollection.png)
+
+Note that the author field contains an object. Each object has a clickable icon. A small circle with a horizontal line. Click this to see the json view of that object.
+
+Note that 'test book 1' had two genres attributed so you can see both represented as {}. Each inner object has a small circle icon with a cross to open the JSON view of that object.
+
+Double click the 'test book 1' line to see how this is represented in JSON
+
+![book with genres](testbook1.png)
+
+Spend some time inspecting the data and check out the import export functions of mongo express.
+
+You can add or update database entrie froom this editor.
+
+When you have finished stop the dev environment.
+
+## mongo 6 - not yet!
+
+**MONGO 6**
+
+If you change the mongodb version from 5.0 to 6.0 the first you will know about it is and error message which says mongo is unknown.  I tried this and from the code had used previously I tried removing
+
+```yaml
+    depends_on:
+      - mongo
+```
+This was causing an unknown dependancy error
+
+This pulls the dependant images and starts the environment and all initially looks well, however when you come to view the library it will offer an error.
+
+```code
+...
+Network mongo--1-interesting_gates_mongo1_network  Creating
+Network mongo--1-interesting_gates_mongo1_network  Created
+Container mongodb  Creating
+Container mongo-express  Creating
+Container mongo-express  Created
+Container mongodb  Created
+Container mongodb  Starting
+Container mongo-express  Starting
+Container mongo-express  Started
+Container mongodb  Started
+```
+
+![all set](allset.png)
+
+Select "done" and continue.
+
 
 In docker desktop create a new environment based on https://github.com.yourRepo/mongo1.
 
-As the environment is created you will see the compose stack being built.
-
-![compose stack](composeStack.webp)
 
 When the build is complete you will see that the environment starts two containers.  These will automatically be connected by a [docker network ](https://docs.docker.com/network/) for connecting between separate containers. and able to cross communicate.
 
 The mongo express log can be seen by clicking the name on docker desktop.  This shows that there are a number of failed attempts to connect to mongodb, presumably this is while the database is starting, the end of the log shows success.
 
 ```code
+Waiting for mongodb:27017...
+Tue Nov  8 11:20:00 UTC 2022 retrying to connect to mongodb:27017 (2/5)
+Tue Nov  8 11:20:01 UTC 2022 retrying to connect to mongodb:27017 (3/5)
+Tue Nov  8 11:20:02 UTC 2022 retrying to connect to mongodb:27017 (4/5)
+Tue Nov  8 11:20:03 UTC 2022 retrying to connect to mongodb:27017 (5/5)
 Welcome to mongo-express
-
 ------------------------
 
 
+Mongo Express server listening at http://0.0.0.0:8081
+Waiting for mongodb:27017...
+Tue Nov  8 11:20:05 UTC 2022 retrying to connect to mongodb:27017 (2/5)
+Welcome to mongo-express
+------------------------
+
 
 Mongo Express server listening at http://0.0.0.0:8081
-
-Server is open to allow connections from anyone (0.0.0.0)
-
 Database connected
-
 Admin Database connected
 ```
 
@@ -907,41 +1037,19 @@ Inspect the database at
 
 > http://localhost:8081/
 
+
+The browser asks you to sign in.  The Username was set to root and the password to example.
+
+![sign in](signin.png)
+
+
 Note that the local_library database has been created:
 
 
 
-![librarycreated](librarycreated.webp)
+![unsupported](unsupported.png)
 
-View the local-library to see the collections: author, book, bookinstance and genre.
-
-![collectionscreated](collections.webp)
-
-View the details of the authors collection
-
-![authorspopulated](authors.webp)
-
-Double click an individual entry line to see the JSON object representation including a unique id.
-
-![json author](rothfuss.webp)
-
-Step back in the browser till you return to the main editor menu and then view the book collection.  Notice that the documents in the book collection contain objects representing the full author details for each book.
-
-![book details](book.webp)
-
-Note that the author field contains an object. Each object has a clickable icon. A small circle with a horizontal line. Click this to see the json view of that object.
-
-Note that 'test book 1' had two genres attributed so you can see both represented as {}. Each inner object has a small circle icon with a cross to open the JSON view of that object.
-
-Double click the 'test book 1' line to see how this is represented in JSON
-
-![book with genres](testbook1.webp)
-
-Spend some time inspecting the data and check out the import export functions of mongo express.
-
-You can add or update database entrie froom this editor.
-
-When you have finished stop the dev environment.
+[Mongo 6.0 is a major update and some legacy code used by mongo-express 0.5 is not supported](https://www.mongodb.com/docs/v6.0/release-notes/6.0-compatibility/#legacy-opcodes-removed).  Since mongo-express 1.0 is still in alpha I suggest not using mongo 6 for the time being.
 
 ## exercise
 
