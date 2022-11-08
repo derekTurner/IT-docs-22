@@ -377,9 +377,17 @@ Running on http://0.0.0.0:8080
 Open the browser to port 8080 and see the hello world message.
 
 
-At the moment I am aeeing an **unable to connect**  message from the browser.
+Initially I see an **unable to connect**  message from the browser.
 
-![hello world](helloworld.webp)
+Note that the address http://0.0.0.0:8080 in the terminal display is a link.  Hover over this to see Follow link CTRL + Click
+
+Rather than manually typing the link into the browser ctrl + click this link.
+
+You may asked to **trust** this website! If so answer yes!
+
+Now the browser correctly displays the app.
+
+![hello world](hello.png)
 
 To check the operation of nodemon, edit the contents of app.js to change the message:
 
@@ -411,9 +419,7 @@ Running on http://0.0.0.0:8080
 ```
 Now refresh the browser to see the updated message.
 
-**Still unable to connect!**
-
-![message changed](messagechanged.webp)
+![message changed](hellochanged.png)
 
 To stop the app running use 
 
