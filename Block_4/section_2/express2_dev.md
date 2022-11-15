@@ -105,6 +105,7 @@ From the root directory (not inside myapp) as root user issue
    create : myapp/public/images/
    create : myapp/public/stylesheets/
    create : myapp/public/stylesheets/style.css
+   
    create : myapp/routes/
    create : myapp/routes/index.js
    create : myapp/routes/users.js

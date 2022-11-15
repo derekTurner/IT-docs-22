@@ -519,7 +519,7 @@ services:
       - mongo1_network 
   
     depends_on:
-      - mongo
+      - mongodb
 
 networks:
   mongo1_network:
