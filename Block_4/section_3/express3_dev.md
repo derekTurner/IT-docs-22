@@ -179,7 +179,7 @@ To address all issues, run:
 
 Run `npm audit` for details.
 ```
-> npm auddit fix --force
+> npm audit fix --force
 
 ```code
 npm WARN using --force Recommended protections disabled.
