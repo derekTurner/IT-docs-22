@@ -96,7 +96,7 @@ Rename myapp to xmyapp.
 
 From the root directory (not inside myapp) as root user issue
 
-> express --view=pug mytapp
+> express --view=pug myapp
 
 ```code
     create : myapp/
