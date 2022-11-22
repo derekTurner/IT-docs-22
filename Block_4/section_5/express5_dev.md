@@ -1,4 +1,4 @@
-# Setting up views for express app.
+## Setting up views for express app.
 
 The steps towards a full stack from here are:
 
@@ -9,34 +9,155 @@ The steps towards a full stack from here are:
 3. Modify the resulting application to return json output rather than pug views and adapt a react app to interface with this.
 
 
-# Developing the Mongo application
+## Developing the Mongo application
 
-Create a new local folder express5 and copy the folders .docker and myapp across together with mongo-init.js from express4 ready to start the next stage.
+Create a new local folder express--5 and copy the folders, docker and myapp across together with mongo-init.js from express4 ready to start the next stage.
+
+
+Start by creating a new public github repository express---5 with a node .gitignore file.
+
+
+
+Create the local bare clone copy working in powershell;
+
+> git clone --bare https://github.com/derekTurner/express--4.git
+
+Move to the now local copy and Mirror push the thew repository
+
+> cd express--4.git
+
+> git push --mirror https://github.com/derekTurner/express--5.git
+
+Then remove the local repository
+
+> cd..
+
+> rm -rf express--4.git
+
+If necessary, manually remove the local copy of express--3.git which is probably in your users directory.
+
+For docker to work it requires all references in the **compose-dev.yaml** file to be unique so edit this in github replacing container name server4 with server 5 and container name mongodb4 with mongodb5.
+
+```Docker
+# Use root/example as user/password credentials
+version: "3.8"
+
+services:
+  server:
+    entrypoint:
+    - sleep
+    - infinity
+    image: node:latest
+    init: true
+    volumes:
+    - type: bind
+      source: /var/run/docker.sock
+      target: /var/run/docker.sock
+    # build:
+    #  context: myapp
+    restart: always
+    
+    container_name: server5
+    ports:
+    - 3000:3000
+    environment:
+      MONGODB_CONNSTRING: mongodb://root:example@mongodb:27017
+    depends_on:
+      - mongodb
+    networks: 
+      - mongo1_network
+    # command: ["npm", "run", "start"]  
+
+  mongodb:
+    image: mongo:5.0
+    restart: always
+    container_name: mongodb5
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: local_library
+    volumes:
+    - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks: 
+      - mongo1_network
+    ports: 
+      - 27017:27017
+
+  mongo-express:
+    image: mongo-express:0.54.0
+    restart: always
+    container_name: mongo-express5
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_AUTH_USERNAME: root
+      ME_CONFIG_MONGODB_AUTH_PASSWORD: example
+      ME_CONFIG_MONGODB_AUTH_DATABASE: local_library
+      MONGODB_CONNSTRING: mongodb://root:example@mongodb:27017
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      # ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: root
+      ME_CONFIG_BASICAUTH_PASSWORD: example
+    depends_on:
+      - mongodb  
+    networks: 
+      - mongo1_network 
+      
+
+
+networks:
+  mongo1_network:
+    driver: bridge
+```
 
 
 This section is working through the Mozilla tutorial section 5 [Displaying Library data](https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/Displaying_data)
 
 In order to work through the tutorial code in the context of docker it is important to consider some points of detail which are required for a successful outcome.
 
-## Mongoose Pluralizes
+## Mongo initialisation
+
+Some changes will need to be made to the **mongo-init.js** file editing on github. I will explain the changes and then give a full listing of the revised **mongo-init.js**
+
+### Mongoose Pluralizes
 
 Mongoose pluralises collections.  So alter mongo-init js so that collectons are authors rather than author and so on for each field.  It is possible to override this pluralisation, but in practice remembering to do so on every occasion is an unnecessary burden.  In the event of a mismatch in naming between collections such as author and authors the result of a query to the database would be the return of an empty dataset, no error would be raised, so the problem may be difficult to spot.
 
-This will mean that the initialisation file must be modified to refer to plural collections.
+This will mean that the initialisation file must be modified to refer to plural collections db.books, db.authors, db.bookinstances and db.genres:
 
+**mongo-init.js**
 ```javascript
+let res = [
   db.books.drop(),
   db.authors.drop(),
   db.bookinstances.drop(),
   db.genres.drop(),
+
+  db.books.createIndex({ title: 1 }, { unique: true }),
+  db.books.createIndex({ summary: 1 }),
+  db.books.createIndex({ author: 1 }),
+  db.books.createIndex({ isbn: 1 }),
+  db.books.createIndex({ genre: 1 }),
+
+  db.authors.createIndex({ first_name: 1 }),
+  db.authors.createIndex({ family_name: 1 }),
+  db.authors.createIndex({ d_birth: 1 }),
+  db.authors.createIndex({ d_death: 1 }),
+
+  db.bookinstances.createIndex({ book: 1 }),
+  db.bookinstances.createIndex({ imprint: 1 }),
+  db.bookinstances.createIndex({ due_back: 1 }),
+  db.bookinstances.createIndex({ status: 1 }),
+
+  db.genres.createIndex({ name: 1 })
+];
 ```
 
-This will be reflected in the collections viewed by mongo express.
 
-![plural collections](pluralCollections.png)
-
-
-## Docker needs authority
+### Docker needs authority
 
 To operate on a database an application needs both a valid connection string and to be an authorised user.  
 
@@ -48,11 +169,13 @@ mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[database][?opti
 
 When containers are spun up by a single docker-compose file docker creates a network connection between them.  The name of the container which is runing the database service is the address to be added to the connection string rather than localhost, 127.0.0.1 or an external url.  
 
-The connection string must include the name of the database being used.  When the mongo express administrative tool is used to inspect a 'database' it is found that there are actually several databases including admin, config and local.  One named admin requires an admin user with a valid password to access it. The admin database contains details of the system users.  The admin user must be set up to match the initial application accessing it. The mongo express application is provided with this through environment variables set in the Docker-Compose file.
+The connection string must include the name of the database being used.  When the mongo express administrative tool is used to inspect a 'database' it is found that there are actually several databases including admin, config and local.  One database named admin requires an admin user with a valid password to access it. The admin database contains details of the system users.  The admin user must be set up to match the initial application accessing it. The mongo express application is provided with this through environment variables set in the Docker-Compose file.
+
+At the moment in compose-dev.yaml the passwords are set as 
 
 ```yaml
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
 ```
 
 Some programmers set up the values of these environment variables in a seperate file .env and then call them in as constants, but that has not been done here.
@@ -70,13 +193,14 @@ maps the initialising javascript file to an entrypoint and runs this to populate
 
 Now the express app which is being written to interact with the database also needs to be a user listed in the system users database.  The app needs to be a user with read write access to the database containing application data, in this case named local_library.
 
-A user can be added to the system users database by adding code to create a user at the top of the mongo-init.js file.
+A user can be added to the system users database by adding code to create a user at the top of the **mongo-init.js** file.
 
+**mongo-init.js**
 ```yaml
 db.createUser(
   {
-      user: "admin",
-      pwd: "password",
+      user: "root",
+      pwd: "example",
       roles:[
           {
               role: "readWrite",
@@ -87,62 +211,7 @@ db.createUser(
 );
 ```
 
-Inspecting the system users collection shows that the user is created below the admin user.
-
-![system users](systemUsers.png)
-
-
-
-
-The connection string to access this is then formed in the app.js file.  The user is authenticated by user and password.
-
-```javascript
-var app = express();
-//Set up mongoose connection
-const mongoose = require('mongoose');
-const mongoDB = 'mongodb://mongo:27017/local_library';
-mongoose.Promise = global.Promise;
-mongoose.connect(mongoDB, { 
-  useNewUrlParser: true, 
-  useUnifiedTopology: true,
-  auth: {     
-  user: "admin",     
-  password: "password"  
-  }  
-});
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-```
-
-Here the url 'mongo' is the name of the container which the database runs in whch is established in the docker-compose file.
-
-```yaml
-services:
-  mongo:
-    image: mongo
-    container_name: mongo
-```
-
-When the connection string is used to make a connection the auth object must match the user and password of the local_library user.
-
-```javascript
-mongoose.connect(mongoDB, { 
-  useNewUrlParser: true, 
-  useUnifiedTopology: true,
-  auth: {
-  user: "admin",
-  password: "password"
-  } 
-});
-```
-
-The application can now successfully interact with the local_library database.
-
-
-
-Some references refer to a flag --Auth used in the docker command line to invoke authorisation.  There is no need to use this in the context of the docker-compose file, authorisation is in place automatically.
-
-## Normalised or Denormalised database
+### Normalised or Denormalised database
 
 [6 Rules of Thumb for MongoDB Schema Design](https://www.mongodb.com/blog/post/6-rules-of-thumb-for-mongodb-schema-design-part-1) discusses the trade off between *normalizing* data, so that every table is  complete with embedded data from one to many relationships and *denormalizing*, so that the collection for the many contains references to the one.
 
@@ -217,8 +286,8 @@ Now update the full listing of **mongo-init.js** accordingly to:
 ```javascript
 db.createUser(
   {
-      user: "admin",
-      pwd: "password",
+      user: "root",
+      pwd: "example",
       roles:[
           {
               role: "readWrite",
@@ -359,6 +428,152 @@ if (error) {
 }
 ```
 
+### create docker environment
+Now create an new Docker environment to continue working in.
+
+![development env express--5](devenv5.png)
+
+Leading to running containers:
+
+![running containers express--5](express--5.png)
+
+Use Mongo express to view the running database and note the changes which normalisation has brought about.
+
+> http://127.0.0.1:8081/
+
+![databases](databases.png)
+
+Viewing the admin database system users shows the roles which can be expanded to view for the admin and local_library databases.
+
+![systemusers](systemusers.png)
+
+In the local library the collection names are pluralized.
+
+![pluralized collections](pluralized.png)
+
+Books contain references to author and genre in the normalised database format rather than the full details which were incuded in the first non-normalised version of the database.
+
+![normalised data](normalised.png)
+
+
+## Install dependancies
+
+Open server5 container in visual studio.
+
+Working as root user 
+
+>cd myapp
+
+Change the password to 'node'
+
+>passwd
+
+```code
+New password: 
+Retype new password: 
+passwd: password updated successfully
+```
+
+Change user to node
+
+>su node
+
+Install the dependancies listed in package.json
+
+>npm install
+
+```code
+added 252 packages, and audited 253 packages in 16s
+
+20 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm notice 
+npm notice New major version of npm available! 8.19.2 -> 9.1.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v9.1.2
+npm notice Run npm install -g npm@9.1.2 to update!
+npm notice 
+```
+
+Updating npm to the latest version will need us to dip back into the root user:
+
+>su root
+
+Enter password as 'node'
+
+>npm install -g npm@9.1.2
+
+```code
+removed 13 packages, changed 74 packages, and audited 223 packages in 5s
+
+14 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+```
+Now the app should be ready to run, so skipping back to the node user.
+
+>su node
+
+Start the app running.
+
+>npm run start
+
+Check that thapp operates as it did in express--4 and then it is ready to develop onwards.
+
+## Server application
+
+Now edit changes to **app.js** .
+
+The mongo-express application can access the database already but app.js can't yet because the connection string has not been correctly completed with user authentication.
+
+Add the connection and authorisation lines to the mongoose connection (taking care of mongodb5 and a comma after true):
+
+```javascript
+//Set up mongoose connection
+const mongoose = require('mongoose');
+const mongoDB = 'mongodb://mongodb5:27017/local_library';
+mongoose.Promise = global.Promise;
+mongoose.connect(mongoDB, { 
+  useNewUrlParser: true, 
+  useUnifiedTopology: true,
+  auth: {     
+  username: "root",     
+  password: "example"  
+  }  
+});
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+```
+
+Here the url 'mongodb5' is the name of the container which the database runs in whch is established in the docker-compose file.
+
+```yaml
+    image: mongo:5.0
+    restart: always
+    container_name: mongodb5
+```
+
+When the connection string is used to make a connection the auth object must match the user and password of the local_library user.
+
+```javascript
+mongoose.connect(mongoDB, { 
+  useNewUrlParser: true, 
+  useUnifiedTopology: true,
+  auth: {
+  user: "admin",
+  password: "password"
+  } 
+});
+```
+
+The application can now successfully interact with the local_library database.
+
+
+
+
+
 ## Asynchronous flow
 
 Information will be requested asynchonously.
@@ -367,7 +582,7 @@ If the information can be gained from a single request  the format of the query 
 
 Specify an operation to perform and a callback function which will handle the results.  The callback function will have two parameters, the first is an error value, which is null if there is no error and the second is the results from the operation.
 
-Here, count is a [Mongoose Method](https://mongoosejs.com/docs/api.html#model_Model.count).
+In this code, count is a [Mongoose Method](https://mongoosejs.com/docs/api.html#model_Model.count).
 
 
 ```javascript
@@ -402,7 +617,7 @@ async.parallel({
 );
 ```
 
-Async also allows for queries in series or waterfall ordering.  The current version of async is 3.1.0 and this is compatible.
+Async also allows for queries in series or waterfall ordering.  The current version of async is 3.2.4 and this is compatible.
 
 Add [async](https://www.npmjs.com/package/async) to package.json
 
@@ -416,16 +631,16 @@ Add [async](https://www.npmjs.com/package/async) to package.json
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
-    "core-js": "^3.19.1",
+    "core-js": "^3.26.0",
     "debug": "~2.6.9",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
     "morgan": "~1.9.1",
-    "nodemon": "^2.0.14",
+    "nodemon": "^2.0.20",
     "pug": "^3.0.2",
-    "mongoose":"^6.0.13",
-    "body-parser":"^1.19.0",
-    "async":"^3.2.2"
+    "mongoose":"^6.7.2",
+    "body-parser":"^1.20.1",
+    "async":"^3.2.4"
   },
   "nodemonConfig": {
     "delay": "1500",
@@ -434,8 +649,22 @@ Add [async](https://www.npmjs.com/package/async) to package.json
 }
 ```
 
-Note that async is not required in app.js.  It is only needed in files which use it and the first of these is bookController.js
+In the folder myapp, install the dependancy file 'async'
 
+>npm install
+
+```code
+added 1 package, and audited 254 packages in 769ms
+
+20 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+```
+
+Note that async is not required in app.js.  It is only needed in files which use it and the first of these is **bookController.js**  This will also require the author and genre models for normalised database operation.  Add these lines:
+
+**bookController.js**
 ```javascript
 var Book = require('../models/book');
 var Author = require('../models/author');
@@ -480,7 +709,7 @@ block content
 
 Modify **myapp/views/layout.pug** to create a local_library base template which will look like a home page for the application which will later be replaced by react code.
 
-```pug
+```javascript
 doctype html
 html(lang='en')
   head
@@ -537,14 +766,14 @@ Replace /public/stylesheets/style.css with:
 
 ## Creating a home page
 
-The [home page](https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/Displaying_data/Home_page) is called when the request is '/' and a route for this is defined within /routes/catalog.js with a callback parameter book_controller.index.
+The [home page](https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/Displaying_data/Home_page) is called when the request is '/' and a route for this is defined within **/routes/catalog.js** with a callback parameter book_controller.index.
 
 ```javascript
 // GET catalog home page.
 router.get('/', book_controller.index);
 ```
 
-This callback index is defined in /controllers/bookController.js
+This callback index is defined in **/controllers/bookController.js**
 
 ```javascript
 exports.index = function(req, res) {
@@ -556,7 +785,7 @@ The controller index will fetch information about how many Book, BookInstance, A
 
 The Mongoose [countDocuments()](https://mongoosejs.com/docs/api.html#model_Model.countDocuments) method is used to cound the number of instances for each model.
 
-Edit bookController.js, replacing exports.index with:
+Edit **bookController.js**, replacing exports.index with:
 
 ```javascript
 var Book = require('../models/book');
@@ -615,101 +844,14 @@ block content
       li #[strong Genres:] !{data.genre_count}
 ```
 
-The view offers and error message if an error is found otherwise it displays the data.
+The view offers an error message if an error is found otherwise it displays the data.
 
-## Try out home page
+In the browser
 
-Update references to mongodb5, mongo-express5 and server 5 in **docker-compose.yaml**
+> http://127.0.0.1:3000/catalog
 
-Stop any previous container running.
+![/catalog](catalog.png)
 
-Create a new Github project named "express5" based on the code which now resides in the express5 folder.  
-
-Open server5 in visual studio code.  Open a terminal:
-
-```code 
->root@e3ff1aab2e11:/com.docker.devenvironments.code#
-```
-Change directory to myapp and install node dependancies.
-
->cd myapp
-
->npm install
-
-```code
-added 252 packages, and audited 253 packages in 1m
-
-27 packages are looking for funding
-  run `npm fund` for details
-
-found 0 vulnerabilities
-npm notice 
-npm notice New patch version of npm available! 8.1.2 -> 8.1.4
-npm notice Changelog: https://github.com/npm/cli/releases/tag/v8.1.4
-npm notice Run npm install -g npm@8.1.4 to update!
-```
-
-Start the application:
-
-> npm start
-
-Test the home page and see the PUG layout.
-
-> http://localhost:3000/catalog
-
-![/catalog](catalog.webp)
-
-
-The catalog is displayed, but the database has not yet been accessed as the book counts are zero.
-
-Look at the book entries in the mongo express admin to see that the references to database ids are correctly inserted.  Note how the normalised database entries now appear.
-
-### ok to stop here or try out code: I will pick up from here next week
-
-> http://localhost:8081/db/local_library/books
-
-![Normalised database entries](normalisedData.png)
-
-### Debugging help
-
-O the first pass through I saw an error such as 'error getting dynamic content' I could see that the database and mongo express were working by looking at 
-
-> http://localhost:8081/db/local_library/books 
-
-To debug I checked the browser console for database connection errors which could be generated by a line in app.js
-
-```javascript
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-```
-Follow the data  flow to look for an error. First checked in routes/catalog.js
-
-Next controller/bookController.js
-
-Then through book_controller.index 
-
-Check the log files on docker desktop.
-
-All looking fine so I needed to view the error details the view file index.pug contains the line to catch errors:
-
-```javascript
-  if error
-    p Error getting dynamic content.
-```
-
-Temporarily changing the line in book_controller.index 
-
-```javascript
- //res.render('index', { title: 'Local Library Home', error: err, data: results });
- res.render('error', { title: 'Local Library Home', error: err, data: results });
-```
-
-Rendered the page with the view error.pug and this will display the error details.
-
-![error view](errorView.png)
-
-Now looking for an authentication error I found that I had omitted this section at the top of mongo-init.js.  Adding those lines repaired the error.
-
-If things don't work right first time don't worry but try to debug systematically.
 
 ## Book list page
 
@@ -794,8 +936,7 @@ exports.bookinstance_list = function(req, res, next) {
       if (err) { return next(err); }
       // Successful, so render
       res.render('bookinstance_list', { title: 'Book Instance List', bookinstance_list: list_bookinstances });
-    });
-    
+    });   
 };
 ```
 Create /views/bookinstance_list.pug with content:
@@ -823,15 +964,19 @@ block content
       li There are no book copies in this library.
 ```
 
+In the browser:
 
+>http://127.0.0.1:3000/catalog/bookinstances
+
+![book instance  poor date  format](bookInstanceRough.png)
 
 ## Date formatting
 
-Use the [npm moment module](https://momentjs.com/) to format dates.  Note current verion is 2.29.1  potentially there are changes since version 1 which may have dependency issues.
+The date formatting here is a bit rough so we will use the [npm moment module](https://momentjs.com/) to format dates.  Note current verion is 2.29.4.  
 
-The original tutorial we are dockerizing used momentjs, however this is now in maintenance and for new projects you should consider using [Luxon](https://moment.github.io/luxon/).
+The original tutorial we are dockerizing used momentjs, however this is now in maintenance and for new projects you should consider using [Temporal](https://momentjs.com/docs/#/-project-status/future/) which is a stage 3 proposal. (for now I am sticking with moment).
 
-Add this module to package.json (this will require a fresh build to apply changes).
+Add this module to package.json (this will require a fresh install build to apply changes).
 
 ```json
 {
@@ -839,20 +984,21 @@ Add this module to package.json (this will require a fresh build to apply change
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon -L start.js"  
+    "start": "nodemon ./bin/www"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
+    "core-js": "^3.26.0",
     "debug": "~2.6.9",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
     "morgan": "~1.9.1",
-    "pug": "2.0.0-beta11",
-    "nodemon": "1.19.1",
-    "mongoose":"^5.7.8",
-    "body-parser":"^1.19.0",
-    "async":"1.5.2",
-    "moment":"2.29.1"
+    "nodemon": "^2.0.20",
+    "pug": "^3.0.2",
+    "mongoose":"^6.7.2",
+    "body-parser":"^1.20.1",
+    "async":"^3.2.4",
+    "moment":"2.29.4"
   },
   "nodemonConfig": {
     "delay": "1500",
@@ -860,8 +1006,26 @@ Add this module to package.json (this will require a fresh build to apply change
   }
 }
 ```
+Stop the server running.
 
-In models/bookinstance.js  require moment and add a 'due_back_formatted' virtual below the 'url' virtual
+>CTRL + C
+
+> npm install
+
+```code
+added 1 package, and audited 255 packages in 911ms
+
+20 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+```
+
+Restart the server
+
+>npm run start
+
+In **models/bookinstance.js**  require moment and add a 'due_back_formatted' virtual below the 'url' virtual.  Edit the BookInstance Schema:
 
 ```javascript
 var mongoose = require('mongoose');
@@ -895,7 +1059,7 @@ BookInstanceSchema
 module.exports = mongoose.model('BookInstance', BookInstanceSchema);
 ```
 
-In /views/bookinstance_list.pug comment out and replace due_back with due_back_formatted.
+In **/views/bookinstance_list.pug** comment out and replace due_back with due_back_formatted.
 
 ```pug
 extends layout
@@ -920,25 +1084,18 @@ block content
       li There are no book copies in this library.
 ```
 
-Rebuild with:
-
->docker-compose -f stack.yml down
-
->docker build -t dt/express-development .
-
->docker-compose -f stack.yml up
 
 Then check date format is month date year.
 
 > http://localhost:3000/catalog/bookinstances
 
-![Book Instance List](bookInstances.png)
+![Book Instance List](bookInstance.png)
 
 
 
 
 
-# author and genre
+# Author and Genre
 
 Still following [Author list and Genre tutorial]()
 
@@ -970,7 +1127,7 @@ exports.author_list = function(req, res, next) {
 };
 ```
 
-The models find(), sort() and exex() functions are used to list Authors in family_name order.
+The models find(), sort() and exec() functions are used to list Authors in family_name order.
 
 
 Create /views/author_list.pug with content:
@@ -1039,16 +1196,17 @@ block content
 
 > http://localhost:3000/catalog/authors
 
-![Author List](authorList.png)
+![Author List](authorsList.png)
 
 > http://localhost:3000/catalog/genres
 
-![Genre List](genreList.png)
+![Genre List](genresList.png)
 
 At this point the database is successfully being read.
 
+I leave it as an exercise to format the authorlist dates.
 
-
+**Commit and synchronize your site to github**
 
 # References
 
