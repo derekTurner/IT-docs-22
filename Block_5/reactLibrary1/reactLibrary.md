@@ -160,6 +160,12 @@ Running on http://127.0.0.1:3000
 
 Despite the fact that this says 3000 it is actually running on 3001!  
 
+This is because the port is forwarded from 3000 to 3001.  Check the port tab in visual studio.
+
+![port forwarding](portForwarding.png)
+
+Hang the mouse over the port display for more  details confirming the port forwarding.
+
 Check that the catalog (and other)
 pages are up and running.
 
